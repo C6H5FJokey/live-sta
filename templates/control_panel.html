@@ -1,0 +1,57 @@
+{% extends "bootstrap/base.html" %}
+
+{% block content %}
+<h1>Control Panel</h1>
+<div>
+    <button id="playBtn">Play</button>
+    <button id="pauseBtn">Pause</button>
+    <input type="number" id="seekInput" placeholder="Seek to (seconds)">
+    <button id="seekBtn">Seek</button>
+    <input type="text" id="sourceInput" placeholder="Input video source">
+    <button id="sourceBtn">Change source</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+<script>
+    const socket = io();
+    
+    document.getElementById('playBtn').addEventListener('click', () => {
+        fetch('/api/control', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({action: 'play'})
+        });
+    });
+
+    document.getElementById('pauseBtn').addEventListener('click', () => {
+        fetch('/api/control', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({action: 'pause'})
+        });
+    });
+
+    document.getElementById('seekBtn').addEventListener('click', () => {
+        const time = document.getElementById('seekInput').value;
+        fetch('/api/control', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({action: 'seek', value: parseFloat(time)})
+        });
+    });
+
+    document.getElementById('sourceBtn').addEventListener('click', () => {
+        const source = document.getElementById('sourceInput').value;
+        try {
+            new URL(source)
+        } catch (error) {
+            return error;
+        }
+        fetch('/api/control', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({action: 'changeVideoSource', value: source})
+        });
+    });
+</script>
+{% endblock %}

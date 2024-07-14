@@ -1,23 +1,73 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <title>{{ name }}'s Watchlist</title>
-        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" type="text/css">
-    </head>
-    <body>
-        <h2>
-            <img alt="Avatar" class="avatar" src="{{ url_for('static', filename='images/avatar.png') }}">
-        </h2>
-        <p>{{ movies|length }} Title</p>
-        <ul class="movie-list">
-            {% for movie in movies %}
-            <li>{{ movie.title }} - {{ movie.year }}</li>
-            {% endfor %}
-        </ul>
-        <img alt="Walking Totoro" class="totoro" src="{{ url_for('static', filename='images/totoro.gif') }}">
-        <footer>
-            <small>&copy; 2018 <a href="http://helloflask.com/book/3">HelloFlask</a></small>
-        </footer>
-    </body>
-</html>
+{% extends "bootstrap/base.html" %}
+
+{% block title %}同步播放器{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>同步播放器</h1>
+    <video id="videoPlayer" controls>
+        您的浏览器不支持video标签。
+    </video>
+    <button id="syncButton" class="btn btn-primary">
+        手动同步
+    </button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{super()}}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+<script>
+    const socket = io();
+    const videoPlayer = document.getElementById('videoPlayer');
+    const syncButton = document.getElementById('syncButton');
+
+    fetch('/get_video_source')
+        .then(response => response.json())
+        .then(data => {
+            videoPlayer.src = data.video_source;
+            videoPlayer.load();
+        });
+    
+    videoPlayer.addEventListener('loadedmetadata', synchronize);
+
+    syncButton.addEventListener('click', synchronize);
+
+    function synchronize() {
+        socket.emit('synchronize');
+        console.log('synchronize')
+    }
+
+    socket.on('current_time', function(data){
+        videoPlayer.currentTime = data.time;
+        console.log(data)
+        if (data.paused == true) {
+            videoPlayer.pause();
+        } else {
+            videoPlayer.play();
+        }
+    })
+
+    socket.on('play', function(data){
+        videoPlayer.play()
+    })
+
+    socket.on('pause', function(data){
+        videoPlayer.pause()
+    })
+
+    socket.on('changeVideoSource', function(data){
+        videoPlayer.src = data.video_source;
+        videoPlayer.load();
+    })
+
+    socket.on('seek', function(data) {
+        videoPlayer.currentTime = data.time;
+        if (data.paused == true) {
+            videoPlayer.pause();
+        } else {
+            videoPlayer.play();
+        }
+    });
+</script>
+{% endblock %}
